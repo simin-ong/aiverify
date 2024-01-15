@@ -15,6 +15,7 @@ def main() -> None:
 
     test_engine = TestEngineApp()
     test_engine.run()
+    print("TESTINGGGGGG DDDDDDDDDDDDDDDDDDDD:")
 
 
 if __name__ == "__main__":  # pragma: no cover
