@@ -14,9 +14,8 @@ def main() -> None:
     warnings.filterwarnings("ignore")
 
     test_engine = TestEngineApp()
-    test_engine.run()
     print("TESTINGGGGGG DDDDDDDDDDDDDDDDDDDD:")
-
+    test_engine.run()
 
 if __name__ == "__main__":  # pragma: no cover
     main()
