@@ -9,3 +9,4 @@ class DataPluginType(Enum):
     PANDAS = 1
     DELIMITER = 2
     IMAGE = 3
+    DICT = 4
