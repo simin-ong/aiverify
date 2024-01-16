@@ -210,6 +210,25 @@ class Plugin(IData, IConverter):
             except Exception:
                 return None
         return None
+    
+    def read_dict_as_df(self, data_dict: dict) -> Any:
+        """
+        A method to read in CSV, with the detected limiter, and converts the data into Pandas DataFrame
+
+        Args:
+            data_path (str): The path of the CSV file
+            delimiter_char (str): The delimiter detected prior to calling this method by DelimiterMetadata
+        Returns:
+            Any: The CSV data in a Pandas DataFrame
+        """
+        if data_dict:
+            try:
+                if all(isinstance(value, list) for value in data_dict.values()):
+                    df = DataFrame.from_dict(data_dict)
+                    return df
+            except Exception:
+                return None
+        return None
 
     def read_image_as_df(self, image_paths: List, column_name: str) -> Any:
         """
