@@ -56,6 +56,10 @@ class DataConverter:
             return DataConverter._convert_delimiter_dict_to_dataframe(
                 data_dict, pandas_instance
             )
+        elif plugin_type is DataPluginType.DICT:
+            return DataConverter._convert_datadict_to_dataframe(
+                data_dict, pandas_instance
+            )
         else:
             return None
 
@@ -88,6 +92,33 @@ class DataConverter:
 
         else:
             df = pandas_instance.read_csv_as_df(data_path, delimiter_type)
+            return df
+        
+    @staticmethod
+    def _convert_datadict_to_dataframe(
+        data_dict: Dict, pandas_instance: IData
+    ) -> Any:
+        """
+        A helper method to convert a dictionary generated from DelimiterData to pandas DataFrame
+
+        Args:
+            data_dict (Dict): The data returned from DelimiterData. It should contain the data path of the CSV file
+            and the delimiter type
+            pandas_instance (Any): The pandas instance created, so we can call pandas methods
+            without importing pandas in test-engine-core
+
+        Returns:
+            pandas.DataFrame (Any): the DataFrame of converted data_dict
+        """
+
+        if (
+            data_dict is None
+            or not isinstance(data_dict, dict)
+        ):
+            return None
+
+        else:
+            df = pandas_instance.read_dict_as_df(data_dict)
             return df
 
     @staticmethod
