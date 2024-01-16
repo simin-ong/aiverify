@@ -71,19 +71,21 @@ class Plugin(ISerializer):
         # check if file can be parsed properly and if the delimiter is supported. if not, raise an error
         try:
             with open(data_path, "r") as text_file:
-                list_data = list(csv.reader(text_file))
-                # check if SV file only has a single column by checking for presence of supported SVs
-                if all(
-                    supported_separated_value[1] not in list_data[0][0]
-                    for supported_separated_value in supported_separated_values_list
-                ):
-                    delimiter_tuple = (DelimiterType.COMMA, ",")
-                    delimiter_instance = DelimiterMetadata(
-                        list_data, delimiter_tuple, data_path
-                    )
-                    return delimiter_instance
-                else:
-                    dialect = csv.Sniffer().sniff(text_file.read(4096))
+                    list_data = list(csv.reader(text_file))
+            if all(
+                supported_separated_value[1] not in list_data[0][0]
+                for supported_separated_value in supported_separated_values_list
+            ):
+                delimiter_tuple = (DelimiterType.COMMA, ",")
+                delimiter_instance = DelimiterMetadata(
+                    list_data, delimiter_tuple, data_path
+                )
+                return delimiter_instance
+            
+            else:
+                with open(data_path, 'r') as file:
+                    content = file.read()
+                    dialect = csv.Sniffer().sniff(content)
                     detected_delimiter_tuple = None
                     for count, item in enumerate(supported_separated_values_list):
                         if (
@@ -97,13 +99,14 @@ class Plugin(ISerializer):
                     if not detected_delimiter_tuple:
                         raise ValueError("The delimiter is not supported.")
 
-                    text_file.seek(0)
-                    reader = csv.reader(text_file, delimiter=dialect.delimiter)
+                    file.seek(0)
+                    reader = csv.reader(file, delimiter=dialect.delimiter)
                     list_data_with_delimiter = list(reader)
                     delimiter_instance = DelimiterMetadata(
                         list_data_with_delimiter, detected_delimiter_tuple, data_path
                     )
                     return delimiter_instance
+                
         except Exception:
             raise
 
