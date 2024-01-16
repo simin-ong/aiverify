@@ -40,6 +40,7 @@ class PluginManager:
         DataPluginType.PANDAS,
         DataPluginType.IMAGE,
         DataPluginType.DELIMITER,
+        DataPluginType.DICT
     ]
     _model_priority_list: List = [
         ModelPluginType.LIGHTGBM,
@@ -54,6 +55,7 @@ class PluginManager:
         SerializerPluginType.TENSORFLOW,
         SerializerPluginType.IMAGE,
         SerializerPluginType.DELIMITER,
+        SerializerPluginType.JSON
     ]
     _pipeline_priority_list: List = [PipelinePluginType.SKLEARN]
     _plugins: Dict = {plugin_type.name: dict() for plugin_type in PluginType}
