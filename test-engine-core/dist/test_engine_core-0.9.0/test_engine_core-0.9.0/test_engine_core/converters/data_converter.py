@@ -43,7 +43,7 @@ class DataConverter:
         """
         if (
             data_dict is None
-            or not (isinstance(data_dict, dict) or isinstance(data_dict, list))
+            or not isinstance(data_dict, dict)
             or plugin_type is None
             or not isinstance(plugin_type, DataPluginType)
             or pandas_instance is None
@@ -54,14 +54,6 @@ class DataConverter:
         # Check that the plugin type is supported for conversion
         if plugin_type is DataPluginType.DELIMITER:
             return DataConverter._convert_delimiter_dict_to_dataframe(
-                data_dict, pandas_instance
-            )
-        elif plugin_type is DataPluginType.DICT:
-            return DataConverter._convert_datadict_to_dataframe(
-                data_dict, pandas_instance
-            )
-        elif plugin_type is DataPluginType.LIST:
-            return DataConverter._convert_listdict_to_dataframe(
                 data_dict, pandas_instance
             )
         else:
@@ -96,60 +88,6 @@ class DataConverter:
 
         else:
             df = pandas_instance.read_csv_as_df(data_path, delimiter_type)
-            return df
-        
-    @staticmethod
-    def _convert_datadict_to_dataframe(
-        data_dict: Dict, pandas_instance: IData
-    ) -> Any:
-        """
-        A helper method to convert a dictionary generated from DelimiterData to pandas DataFrame
-
-        Args:
-            data_dict (Dict): The data returned from DelimiterData. It should contain the data path of the CSV file
-            and the delimiter type
-            pandas_instance (Any): The pandas instance created, so we can call pandas methods
-            without importing pandas in test-engine-core
-
-        Returns:
-            pandas.DataFrame (Any): the DataFrame of converted data_dict
-        """
-
-        if (
-            data_dict is None
-            or not isinstance(data_dict, dict)
-        ):
-            return None
-
-        else:
-            df = pandas_instance.read_dict_as_df(data_dict)
-            return df
-    
-    @staticmethod
-    def _convert_listdict_to_dataframe(
-        data_dict: list, pandas_instance: IData
-    ) -> Any:
-        """
-        A helper method to convert a dictionary generated from DelimiterData to pandas DataFrame
-
-        Args:
-            data_dict (Dict): The data returned from DelimiterData. It should contain the data path of the CSV file
-            and the delimiter type
-            pandas_instance (Any): The pandas instance created, so we can call pandas methods
-            without importing pandas in test-engine-core
-
-        Returns:
-            pandas.DataFrame (Any): the DataFrame of converted data_dict
-        """
-
-        if (
-            data_dict is None
-            or not isinstance(data_dict, list)
-        ):
-            return None
-
-        else:
-            df = pandas_instance.read_dict_as_df(data_dict)
             return df
 
     @staticmethod

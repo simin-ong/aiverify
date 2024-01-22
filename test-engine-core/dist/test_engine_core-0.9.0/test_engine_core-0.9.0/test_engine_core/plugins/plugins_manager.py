@@ -40,8 +40,6 @@ class PluginManager:
         DataPluginType.PANDAS,
         DataPluginType.IMAGE,
         DataPluginType.DELIMITER,
-        DataPluginType.DICT,
-        DataPluginType.LIST
     ]
     _model_priority_list: List = [
         ModelPluginType.LIGHTGBM,

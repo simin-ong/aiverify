@@ -1,0 +1,24 @@
+Metadata-Version: 2.1
+Name: test-engine-core
+Version: 0.9.0
+Summary: This core project will support critical functionalities to support plugins and apps.
+Author: AI Verify
+Requires-Python: >=3.10,<3.12
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Requires-Dist: jsonschema (==4.18.4)
+Requires-Dist: numpy (==1.23.5)
+Requires-Dist: redis (==4.5.5)
+Description-Content-Type: text/markdown
+
+# Test Engine Core
+
+## Description
+* This core project will support critical functionalities to support plugins and apps.
+
+## License
+* Licensed under Apache Software License 2.0
+
+## Developers:
+* AI Verify

@@ -97,7 +97,6 @@ class DataManager:
                 serializer_instance,
                 error_message,
             ) = DataManager._read_data_path(path, data_plugins, serializer_plugins)
-
             if is_success and data_instance and serializer_instance:
                 data_serializer_instances.append((data_instance, serializer_instance))
 
@@ -174,8 +173,6 @@ class DataManager:
             (
                 is_success,
                 return_data_instance,
-                data_dict,
-                df_data,
                 error_message,
             ) = DataManager._convert_to_pandas(return_data_instance, data_plugins)
 
@@ -271,7 +268,7 @@ class DataManager:
                 data_plugins, **{"data": df_data}
             )
 
-            return is_success, data_instance, data_dict, df_data, ""
+            return is_success, data_instance, ""
         else:
             error_message = f"There was an error finding pandas core module: {DataManager._pandas_name}"
             log_message(DataManager._logger, logging.ERROR, error_message)
