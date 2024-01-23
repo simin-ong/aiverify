@@ -122,6 +122,7 @@ class DataManager:
         # Attempt to consolidate the data instances and data serializer instances.
         # We will consolidate the images into a single data instance and data serializer instance.
         # The other types will only return the first instance
+
         if data_serializer_instances:
             if (
                 len(data_serializer_instances) == 1

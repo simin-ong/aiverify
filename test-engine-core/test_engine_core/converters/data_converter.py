@@ -127,7 +127,7 @@ class DataConverter:
     
     @staticmethod
     def _convert_listdict_to_dataframe(
-        data_dict: list, pandas_instance: IData
+        data_dict: List, pandas_instance: IData
     ) -> Any:
         """
         A helper method to convert a dictionary generated from DelimiterData to pandas DataFrame
@@ -149,7 +149,7 @@ class DataConverter:
             return None
 
         else:
-            df = pandas_instance.read_dict_as_df(data_dict)
+            df = pandas_instance.read_list_as_df(data_dict)
             return df
 
     @staticmethod
