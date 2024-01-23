@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict, Tuple, Union, List
 
 from test_engine_core.interfaces.idata import IData
 from test_engine_core.plugins.enums.data_plugin_type import DataPluginType
@@ -152,7 +152,7 @@ class Plugin(IData):
         """
         pass
 
-    def convert_to_dict(self) -> Dict:
+    def convert_to_dict(self) -> List:
         """
         A method to convert the data returned from the data plugin to Dict
 

@@ -174,7 +174,6 @@ class PluginTest:
         error_message = ""
 
         labels = data_instance.read_labels()
-        print(labels)
         # compare labels with expected
         if labels == self._expected_data_labels:
             # Labels are correct

@@ -4,7 +4,7 @@ from module_tests.plugin_test import PluginTest
 
 if __name__ == "__main__":
     discover_path = Path.cwd().parent
-    file_path = str(discover_path / "dictdata/user_defined_files/teststring.json")
+    file_path = str(discover_path / "listdata/user_defined_files/teststring.json")
 
     # =================================================================================
     # NOTE: Do not modify the code below
