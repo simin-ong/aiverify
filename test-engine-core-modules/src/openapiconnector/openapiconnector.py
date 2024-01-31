@@ -411,6 +411,14 @@ class Plugin(IModel):
 
         # Update the data mapping dictionary with the row value
         return_list = dict()
+        print("HEREEEEEEEEEEEEE")
+        print("data label:")
+        print(data_labels)
+        print("data mapping: ")
+        print(data_mapping)
+        print("data row list: ")
+        print(data_row_list)
+        
         for key, value in data_mapping.items():
             index = next(
                 (
