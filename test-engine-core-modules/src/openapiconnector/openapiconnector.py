@@ -151,8 +151,6 @@ class Plugin(IModel):
         else:
             self._api_schema: Dict = dict()
             self._api_config: Dict = dict()
-        print(self._api_schema)
-        print(self._api_config)
 
     def cleanup(self) -> None:
         """
@@ -405,7 +403,8 @@ class Plugin(IModel):
             data_row_list = data_row
 
         # parameters field is not empty
-        if len(self._api_config.get("parameters", [])):
+        # if len(self._api_config.get("parameters", [])):
+        if self._api_config.get("parameters"):
             data_mapping = self._api_config.get("parameters", dict())
         # no parameters. mapping should be in requestBody
         else:
