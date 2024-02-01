@@ -397,6 +397,8 @@ class Plugin(IModel):
         """
 
         # Make sure that the data row comes in as a list, so we can reference the index and pull the value
+        print("data row: ")
+        print(data_row)
         if isinstance(data_row, pd.Series):
             data_row_list = data_row.tolist()
         else:
@@ -419,12 +421,14 @@ class Plugin(IModel):
         print(data_mapping)
         print("data row list: ")
         print(data_row_list)
+        print("data row: ")
+        print(data_row)
         
         for key, value in data_mapping.items():
             index = next(
                 (
                     index
-                    for index, (key1, value1) in enumerate(data_labels)
+                    for index, key1 in enumerate(data_labels)
                     if key1 == value
                 ),
                 None,
@@ -437,7 +441,8 @@ class Plugin(IModel):
                 return_list[key] = int(data_row_list[index])
             else:
                 return_list[key] = data_row_list[index]
-
+        print("return list:")
+        print(return_list)
         return return_list
 
     async def send_request(self, row, *args) -> Response:
