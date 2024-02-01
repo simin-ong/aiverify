@@ -151,6 +151,8 @@ class Plugin(IModel):
         else:
             self._api_schema: Dict = dict()
             self._api_config: Dict = dict()
+        print(self._api_schema)
+        print(self._api_config)
 
     def cleanup(self) -> None:
         """
