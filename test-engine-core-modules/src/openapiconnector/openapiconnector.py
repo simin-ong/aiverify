@@ -574,6 +574,8 @@ class Plugin(IModel):
         start_time = time.time()
         response_data = list()
         new_list_of_data = []
+        print("HERE! make request")
+        print(data)
 
         # batching using application/json
         if self._api_batch_strategy == BatchStrategy.APPLICATION_JSON:
@@ -609,6 +611,7 @@ class Plugin(IModel):
                 if type(data_to_predict) is pd.DataFrame:
                     for _, row in data_to_predict.iterrows():
                         # Pass this information to the send request function to request
+                        print(row)
                         new_list_of_data.append(row)
                 # NDARRAY
                 else:
