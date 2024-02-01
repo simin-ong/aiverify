@@ -581,24 +581,41 @@ class Plugin(IModel):
         if self._api_batch_strategy == BatchStrategy.APPLICATION_JSON:
             batched_data = []
             # Loop through the data list. It can be a list of mixed data to be predicted such as DF or numpy.
-            for data_to_predict in data:
-                # PANDAS DF
-                if type(data_to_predict) is pd.DataFrame:
-                    for _, row in data_to_predict.iterrows():
-                        batched_data.append(row)
-                    for i in range(0, len(batched_data), self._api_batch_limit):
-                        new_list_of_data.append(
-                            batched_data[i : i + self._api_batch_limit]
-                        )
-                # NDARRAY
-                else:
-                    for row in data_to_predict:
-                        # Pass this information to the send request function to request
-                        batched_data.append(row)
-                    for i in range(0, len(batched_data), self._api_batch_limit):
-                        new_list_of_data.append(
-                            batched_data[i : i + self._api_batch_limit]
-                        )
+            if isinstance(data, list):
+                for data_to_predict in data:
+                    # PANDAS DF
+                    if type(data_to_predict) is pd.DataFrame:
+                        for _, row in data_to_predict.iterrows():
+                            batched_data.append(row)
+                        for i in range(0, len(batched_data), self._api_batch_limit):
+                            new_list_of_data.append(
+                                batched_data[i : i + self._api_batch_limit]
+                            )
+                    # NDARRAY
+                    else:
+                        for row in data_to_predict:
+                            # Pass this information to the send request function to request
+                            batched_data.append(row)
+                        for i in range(0, len(batched_data), self._api_batch_limit):
+                            new_list_of_data.append(
+                                batched_data[i : i + self._api_batch_limit]
+                            )
+            elif isinstance(data, pd.DataFrame):
+                for _, row in data.iterrows():
+                    batched_data.append(row)
+                for i in range(0, len(batched_data), self._api_batch_limit):
+                    new_list_of_data.append(
+                        batched_data[i : i + self._api_batch_limit]
+                    )
+            else: #array
+                for row in data_to_predict:
+                            # Pass this information to the send request function to request
+                    batched_data.append(row)
+                for i in range(0, len(batched_data), self._api_batch_limit):
+                    new_list_of_data.append(
+                        batched_data[i : i + self._api_batch_limit]
+                    )
+                    
             jobs = [
                 functools.partial(self.send_batched_request, row_data, *args)
                 for row_data in new_list_of_data
@@ -606,18 +623,29 @@ class Plugin(IModel):
         # no batching
         else:
             # loop through the data list. it can be a list of mixed data to be predicted such as DF or numpy
-            for data_to_predict in data:
-                # PANDAS DF
-                if type(data_to_predict) is pd.DataFrame:
-                    for _, row in data_to_predict.iterrows():
-                        # Pass this information to the send request function to request
-                        print(row)
-                        new_list_of_data.append(row)
-                # NDARRAY
-                else:
-                    for row in data_to_predict:
-                        # Pass this information to the send request function to request
-                        new_list_of_data.append(row)
+            if isinstance(data, list): 
+                for data_to_predict in data:
+                    # PANDAS DF
+                    if type(data_to_predict) is pd.DataFrame:
+                        for _, row in data_to_predict.iterrows():
+                            # Pass this information to the send request function to request
+                            print(row)
+                            new_list_of_data.append(row)
+                    # NDARRAY
+                    else:
+                        for row in data_to_predict:
+                            # Pass this information to the send request function to request
+                            new_list_of_data.append(row)
+            elif isinstance(data, pd.DataFrame):
+                for _, row in data.iterrows():
+                            # Pass this information to the send request function to request
+                    print(row)
+                    new_list_of_data.append(row)
+            else:
+                for row in data_to_predict:
+                    # Pass this information to the send request function to request
+                    new_list_of_data.append(row)
+            
             jobs = [
                 functools.partial(self.send_request, row_data, *args)
                 for row_data in new_list_of_data
