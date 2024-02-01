@@ -397,8 +397,6 @@ class Plugin(IModel):
         """
 
         # Make sure that the data row comes in as a list, so we can reference the index and pull the value
-        print("data row: ")
-        print(data_row)
         if isinstance(data_row, pd.Series):
             data_row_list = data_row.tolist()
         else:
@@ -415,14 +413,8 @@ class Plugin(IModel):
         # Update the data mapping dictionary with the row value
         return_list = dict()
         print("HEREEEEEEEEEEEEE")
-        print("data label:")
-        print(data_labels)
-        print("data mapping: ")
-        print(data_mapping)
         print("data row list: ")
         print(data_row_list)
-        print("data row: ")
-        print(data_row)
         
         for key, value in data_mapping.items():
             index = next(
@@ -484,6 +476,9 @@ class Plugin(IModel):
             headers, data, result = await self._api_instance._.predict_api.request(
                 parameters=headers, data=body
             )
+            print("HEADERS")
+            print(headers)
+            print(result)
         else:
             # GET method. Populate body with payload values
             body = None
@@ -574,8 +569,6 @@ class Plugin(IModel):
         start_time = time.time()
         response_data = list()
         new_list_of_data = []
-        print("HERE! make request")
-        print(data)
 
         # batching using application/json
         if self._api_batch_strategy == BatchStrategy.APPLICATION_JSON:
@@ -629,7 +622,6 @@ class Plugin(IModel):
                     if type(data_to_predict) is pd.DataFrame:
                         for _, row in data_to_predict.iterrows():
                             # Pass this information to the send request function to request
-                            print(row)
                             new_list_of_data.append(row)
                     # NDARRAY
                     else:
@@ -639,7 +631,6 @@ class Plugin(IModel):
             elif isinstance(data, pd.DataFrame):
                 for _, row in data.iterrows():
                             # Pass this information to the send request function to request
-                    print(row)
                     new_list_of_data.append(row)
             else:
                 for row in data_to_predict:
@@ -668,7 +659,8 @@ class Plugin(IModel):
                 max_per_second=self._api_rate_limit,
             )
         # # get the response data_type: array/object/string/number/integer/boolean
-
+        print('RESPONSE')
+        print(response_list)
         response_data_type = (
             self._api_config.get("responseBody").get("schema").get("type")
         )
