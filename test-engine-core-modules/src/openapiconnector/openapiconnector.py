@@ -412,15 +412,12 @@ class Plugin(IModel):
 
         # Update the data mapping dictionary with the row value
         return_list = dict()
-        print("HEREEEEEEEEEEEEE")
-        print("data row list: ")
-        print(data_row_list)
         
         for key, value in data_mapping.items():
             index = next(
                 (
                     index
-                    for index, key1 in enumerate(data_labels)
+                    for index, (key1, value1) in enumerate(data_labels)
                     if key1 == value
                 ),
                 None,
@@ -433,7 +430,7 @@ class Plugin(IModel):
                 return_list[key] = int(data_row_list[index])
             else:
                 return_list[key] = data_row_list[index]
-        print("return list:")
+        print("data payload return list:")
         print(return_list)
         return return_list
 
@@ -474,11 +471,8 @@ class Plugin(IModel):
             # Populate body with payload values
             body = self._api_instance_schema.get_type().construct(**row_data_to_send)
             headers, data, result = await self._api_instance._.predict_api.request(
-                parameters=headers, data=body
+                parameters=headers, data=row_data_to_send
             )
-            print("HEADERS")
-            print(headers)
-            print(result)
         else:
             # GET method. Populate body with payload values
             body = None
