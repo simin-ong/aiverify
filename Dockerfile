@@ -1,0 +1,208 @@
+# Build the aiverify docker image
+
+FROM ubuntu:22.04
+
+###################  Install libraries ######################
+
+ENV TZ=Asia/Singapore
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# Install node v18.x
+RUN apt-get update && apt-get install -y curl
+RUN curl -sL https://deb.nodesource.com/setup_18.x | bash -
+RUN apt-get update && apt-get install -y nodejs
+
+# Install python 3.11, virtualenv
+RUN apt-get update
+RUN apt install software-properties-common -y
+RUN add-apt-repository ppa:deadsnakes/ppa
+RUN apt-get install -y python3.11 python3.11-venv
+
+###################  Install chromium ######################
+
+# Install Chromium (for puppeteer) separately to cater for arm64 and amd64,
+# as puppeteer installs Chrome/Chromium for amd64 only
+RUN apt-get install debian-archive-keyring
+
+RUN umask 22
+
+RUN echo 'deb [signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] http://deb.debian.org/debian stable main\n \
+deb-src [signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] http://deb.debian.org/debian stable main\n \
+\n \
+deb [signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] http://deb.debian.org/debian-security/ stable-security main\n \
+deb-src [signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] http://deb.debian.org/debian-security/ stable-security main\n \
+\n \
+deb [signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] http://deb.debian.org/debian stable-updates main\n \
+deb-src [signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] http://deb.debian.org/debian stable-updates main' | tee /etc/apt/sources.list.d/debian-stable.list
+
+RUN echo 'Package: chromium*\n \
+Pin: origin *.debian.org\n \
+Pin-Priority: 100\n \
+\n \
+Package: *\n \
+Pin: origin *.debian.org\n \
+Pin-Priority: 1' | tee /etc/apt/preferences.d/debian-chromium
+
+RUN apt-get update
+
+RUN apt-get install chromium -y
+
+RUN ln -s /usr/bin/chromium /usr/bin/chromium-browser
+
+# For shap-toolbox stock plugin
+RUN apt-get install -y gcc g++ python3.11-dev
+
+# Install Git
+RUN apt-get install -y git
+
+RUN apt-get install unzip
+
+################### Create aiverify user ######################
+
+ARG USER=aiverify
+RUN groupadd -g 10000 $USER
+RUN useradd -u 10000 -g 10000 -ms /bin/bash $USER
+
+###################  Clone aiverify repo ######################
+
+# ARG BRANCH_TAG=v0.10.x
+# RUN echo "BRANCH_TAG=$BRANCH_TAG"
+# WORKDIR /app
+# RUN git clone https://github.com/simin-ong/aiverify
+# # RUN git clone https://github.com/imda-btg/aiverify.git --branch=$BRANCH_TAG aiverify
+
+# WORKDIR /app/aiverify
+
+WORKDIR /app/aiverify
+COPY ai-verify-apigw/ ./ai-verify-apigw/
+COPY ai-verify-portal/ ./ai-verify-portal/
+COPY ai-verify-shared-library/ ./ai-verify-shared-library/
+COPY stock-plugins/ ./stock-plugins/
+COPY test-engine-app/ ./test-engine-app/
+COPY test-engine-core/ ./test-engine-core/
+
+# Create plugins, file upload and logs folders
+RUN mkdir -p ./ai-verify-portal/plugins
+RUN mkdir -p ./uploads/data
+RUN mkdir -p ./uploads/model
+RUN mkdir -p ./test-engine-app/logs
+
+RUN chown -R 10000:10000 /app/aiverify
+
+###################  Node ######################
+
+# Install dependencies for shared-library
+WORKDIR /app/aiverify/ai-verify-shared-library
+RUN npm install && npm run build
+
+WORKDIR /app/aiverify/ai-verify-portal
+
+# Create env file for portal
+# Change localhost of the following urls (via --build-arg) to hostname of
+# the machine running aiverify if you want to access from a remote browser
+ARG PORTAL_URL=http://localhost
+ARG WS_URL=ws://localhost
+RUN echo "PORTAL_URL=$PORTAL_URL WS_URL=$WS_URL"
+RUN echo "APIGW_URL=http://localhost:4000\n\
+MONGODB_URI=mongodb://aiverify:aiverify@db:27017/aiverify\n\
+REDIS_URI=redis://redis:6379\n\
+TEST_ENGINE_URL=http://test-engine:8080" | tee .env.local
+RUN rm .env.development
+
+# Install dependencies for portal, and build portal (nextjs build)
+RUN npm install
+RUN npm link ../ai-verify-shared-library
+RUN npm run build
+
+# Create env file for apigw
+WORKDIR /app/aiverify/ai-verify-apigw
+RUN echo 'MONGODB_URI=mongodb://aiverify:aiverify@db:27017/aiverify\n\
+DB_URI=mongodb://aiverify:aiverify@db:27017/aiverify\n\
+REDIS_HOST=redis\n\
+REDIS_PORT=6379\n\
+WEB_REPORT_URL=http://localhost:3000/reportStatus/printview' | tee .env
+
+# Install dependencies for apigw
+# Skip Chrome/chromium install during puppeteer install, since chromium
+# already installed above
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD 1
+RUN npm install
+ENV PUPPETEER_EXECUTABLE_PATH /usr/bin/chromium
+
+############## Stock plugins #################
+
+# Unzip stock plugin bundles into the plugins folder
+WORKDIR /app/aiverify/stock-plugins
+RUN for plugin_dir in *; do \
+      echo "Unzipping plugin $plugin_dir"; \
+      unzip $plugin_dir/dist/*.zip -d ../ai-verify-portal/plugins/$plugin_dir; \
+    done
+
+RUN chown -R 10000:10000 /app/aiverify/ai-verify-portal/plugins
+
+############### Python #################
+
+# Install dependencies into virtualenv
+WORKDIR /app/aiverify
+RUN python3 -m venv venv
+ENV PATH="/app/aiverify/venv/bin:$PATH"
+
+# Install dependencies
+WORKDIR /app/aiverify/test-engine-app
+RUN pip install -r requirements.txt
+WORKDIR /app/aiverify/test-engine-core
+RUN pip install -r requirements.txt
+# WORKDIR /app/aiverify/test-engine-core-modules
+# RUN pip install -r requirements.txt
+WORKDIR /app/aiverify/stock-plugins
+RUN find ./ -type f -name 'requirements.txt' -exec pip install -r "{}" \;
+WORKDIR /app/aiverify
+# RUN pip install ./test-engine-core/dist/test_engine_core-*.tar.gz
+RUN pip install ./test-engine-core/dist/test_engine_core-0.9.0.tar.gz
+
+RUN pip install deepchecks==0.17.5
+RUN pip install deepchecks[nlp]==0.17.5
+RUN pip install deepchecks[vision]==0.17.5
+RUN pip install torch==2.1.0
+RUN pip install sentence_transformers==2.2.2
+
+# RUN pip install --no-cache-dir fasttext-wheel
+# RUN pip uninstall pybind11
+# RUN pip install deepchecks[nlp-properties]==0.17.5
+
+# RUN mkdir /app/aiverify/test_engine_core_modules && mkdir /app/aiverify/test_engine_core
+# copy requirements.txt from core and core-modules
+# change workdir and pip install
+WORKDIR /app/aiverify/test-engine-core-modules
+COPY test-engine-core-modules/requirements.txt ./
+RUN pip install -r requirements.txt
+# WORKDIR /app/aiverify/test-engine-core
+# COPY test-engine-core/requirements.txt ./
+# RUN pip install -r requirements.txt
+
+# COPY dist/ ./dist/
+
+## rerun below steps if there are any changes to test-engine-core*
+# COPY test-engine-core
+# RUN mkdir /app/aiverify/test_engine_core/dist
+# COPY test-engine-core/dist/ ./dist
+
+# WORKDIR /app/aiverify
+# RUN pip install ./test-engine-core/dist/test_engine_core-0.9.0.tar.gz
+
+# WORKDIR /app/aiverify
+# COPY test-engine-core-modules/ ./test-engine-core-modules/
+
+# Create env file for test-engine-app
+WORKDIR /app/aiverify/test-engine-app
+RUN echo 'CORE_MODULES_FOLDER="../test-engine-core-modules"\n\
+VALIDATION_SCHEMAS_FOLDER="./test_engine_app/validation_schemas/"\n\
+REDIS_CONSUMER_GROUP="MyGroup"\n\
+REDIS_SERVER_HOSTNAME="redis"\n\
+REDIS_SERVER_PORT=6379\n\
+API_SERVER_PORT=8080' | tee .env
+
+# Run containers with non-root user
+USER $USER
+
+WORKDIR /app
