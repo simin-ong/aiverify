@@ -12,6 +12,8 @@ import aiopenapi3
 import httpx as httpx
 import numpy as np
 import pandas as pd
+from PIL import Image
+import os
 from aiopenapi3 import FileSystemLoader, OpenAPI
 from httpx import Response
 from openapi_schema_validator import OAS30Validator, validate
@@ -282,6 +284,7 @@ class Plugin(IModel):
         """
         # Call the function to make multiple requests
         try:
+            print("datalabels!!!", *args)
             return asyncio.run(self.make_request(data, *args))
         except:
             raise RuntimeError("Unable to send request to API Server. Please ensure that the URL is correct.")
@@ -397,6 +400,8 @@ class Plugin(IModel):
         """
 
         # Make sure that the data row comes in as a list, so we can reference the index and pull the value
+        print("data row", data_row)
+        print("data labels", data_labels)
         if isinstance(data_row, pd.Series):
             data_row_list = data_row.tolist()
         else:
@@ -432,6 +437,14 @@ class Plugin(IModel):
                 return_list[key] = data_row_list[index]
         print("data payload return list:")
         print(return_list)
+        if len(return_list) == 1 and os.path.isfile(list(return_list.values())[0]):
+        #list(return_list.keys())[0] == "image": #should match the api request body image column
+            img = return_list['image']
+            norm_img = np.array(Image.open(img)) 
+            norm_img = norm_img.tolist()
+            img_json = {"image": norm_img}
+            return_list = img_json
+        # print(return_list)
         return return_list
 
     async def send_request(self, row, *args) -> Response:
@@ -480,6 +493,7 @@ class Plugin(IModel):
             headers, data, result = await self._api_instance._.predict_api.request(
                 parameters=row_data_to_send, data=body
             )
+        print("checkpoint3", result)
         return result
 
     async def send_batched_request(self, list_of_rows, *args) -> Response:
@@ -563,7 +577,11 @@ class Plugin(IModel):
         start_time = time.time()
         response_data = list()
         new_list_of_data = []
-
+        print("checkpoint1")
+        print(data)
+        # print(data.shape)
+        # print(len(data))
+        print(type(data))
         # batching using application/json
         if self._api_batch_strategy == BatchStrategy.APPLICATION_JSON:
             batched_data = []
@@ -595,13 +613,18 @@ class Plugin(IModel):
                         batched_data[i : i + self._api_batch_limit]
                     )
             else: #array
-                for row in data_to_predict:
+                print("checkpoint2")
+                for row in data:
                             # Pass this information to the send request function to request
                     batched_data.append(row)
                 for i in range(0, len(batched_data), self._api_batch_limit):
                     new_list_of_data.append(
                         batched_data[i : i + self._api_batch_limit]
                     )
+                    
+            print("batched data and type")
+            # print(data)
+            print("NEWLIST", new_list_of_data, len(new_list_of_data))
                     
             jobs = [
                 functools.partial(self.send_batched_request, row_data, *args)
@@ -627,15 +650,19 @@ class Plugin(IModel):
                             # Pass this information to the send request function to request
                     new_list_of_data.append(row)
             else:
-                for row in data_to_predict:
+                for row in data:
                     # Pass this information to the send request function to request
                     new_list_of_data.append(row)
+            print("data and type")
+            print(data)
+            print(type(data))
+            print("NEWLIST", new_list_of_data, len(new_list_of_data))
             
             jobs = [
                 functools.partial(self.send_request, row_data, *args)
                 for row_data in new_list_of_data
             ]
-
+            
         if self._api_max_connections == -1 and self._api_rate_limit == -1:
             response_list = await aiometer.run_all(jobs)
         elif self._api_max_connections == -1:
@@ -653,8 +680,6 @@ class Plugin(IModel):
                 max_per_second=self._api_rate_limit,
             )
         # # get the response data_type: array/object/string/number/integer/boolean
-        print('RESPONSE')
-        print(response_list)
         response_data_type = (
             self._api_config.get("responseBody").get("schema").get("type")
         )
