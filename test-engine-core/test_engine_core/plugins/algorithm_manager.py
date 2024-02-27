@@ -103,6 +103,11 @@ class AlgorithmManager:
                 algorithm_arguments["progress_callback"] = kwargs.get(
                     "progress_callback", None
                 )
+                print("data_serializer_instance", data_serializer_instance)
+                print("model_serializer_instance", model_serializer_instance)
+                print("ground_truth_serializer_instance", ground_truth_serializer_instance)
+                print("initial_data_instance", initial_data_instance)
+                print("initial_model_instance", initial_model_instance)
                 algorithm_arguments["ground_truth"] = kwargs.get("ground_truth", "")
                 algorithm_arguments["model_type"] = kwargs.get("model_type")
                 algorithm = algorithm_plugins[algorithm_id].Plugin(
