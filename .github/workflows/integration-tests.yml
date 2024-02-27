@@ -32,7 +32,7 @@ jobs:
     if: (github.event_name == 'pull_request_review' && github.event.review.state == 'approved') || github.event_name == 'workflow_dispatch'
 
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 100
 
     steps:
 
@@ -165,7 +165,13 @@ jobs:
           DB_URI=\"mongodb://aiverify:aiverify@127.0.0.1:27017/aiverify\"
           WEB_REPORT_URL=\"http://127.0.0.1:3000/reportStatus/printview\"
           REDIS_HOST=\"localhost\"
-          REDIS_PORT=6379" > .env
+          REDIS_PORT=6379
+          DB_HOST=127.0.0.1
+          DB_PORT=27017
+          DB_USERNAME=aiverify
+          DB_PASSWORD=aiverify
+          ALLOWED_ORIGINS=http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:4000" > .env
+
           node app.mjs &> apigw.log &
           
           cd ../ai-verify-portal
@@ -212,7 +218,8 @@ jobs:
           python3 -m venv venv
           source venv/bin/activate
           pip3 install -r requirements.txt
-          bash regression_run_https.sh &
+          bash regression_run_https.sh && fg &
+          bash classification_run_https.sh &
 
       - name: Run smoke tests
         if: ${{ ! cancelled() }}
@@ -220,7 +227,7 @@ jobs:
           cd qa-test/smoke-testing
           npm install
           npx playwright install
-          ENVIRONMENT_URL=https://127.0.0.1:5000 npx playwright test
+          ENVIRONMENT_URL=https://127.0.0.1 npx playwright test
 
       - name: Run frontend tests
         if: ${{ ! cancelled() }}
