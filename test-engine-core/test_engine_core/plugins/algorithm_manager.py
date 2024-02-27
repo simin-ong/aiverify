@@ -111,7 +111,7 @@ class AlgorithmManager:
                 algorithm_arguments["ground_truth"] = kwargs.get("ground_truth", "")
                 algorithm_arguments["model_type"] = kwargs.get("model_type")
                 algorithm = algorithm_plugins[algorithm_id].Plugin(
-                    data_serializer_instance,
+                    data_serializer_instance, test
                     model_serializer_instance,
                     ground_truth_serializer_instance,
                     initial_data_instance,
