@@ -13,6 +13,7 @@ from test_engine_core.interfaces.iserializer import ISerializer
 from test_engine_core.plugins.enums.data_plugin_type import DataPluginType
 from test_engine_core.plugins.enums.model_type import ModelType
 from test_engine_core.plugins.enums.plugin_type import PluginType
+from test_engine_core.plugins.enums.model_plugin_type import ModelPluginType
 from test_engine_core.plugins.enums.serializer_plugin_type import SerializerPluginType
 from test_engine_core.plugins.metadata.plugin_metadata import PluginMetadata
 from test_engine_core.utils.json_utils import load_schema_file, validate_json
@@ -336,11 +337,31 @@ class Plugin(IAlgorithm):
                 self._serializer_instance.get_serializer_plugin_type()
                 is SerializerPluginType.IMAGE
             ):
-                self._model = self._initial_model_instance
-                self._data = self._initial_data_instance.get_data()
-                self._data_labels = list(
+                if (self._model_instance.get_plugin_type()
+                    is PluginType.MODEL
+                ):
+                    if (
+                        self._model_instance.get_model_plugin_type()
+                        is ModelPluginType.API
+                    ):
+                        self._model = self._model_instance
+                        self._data = self._data_instance.get_data()
+                        self._data_labels = list(
+                        self._data_instance.read_labels().keys()
+                        )
+                    else:
+                        self._model = self._initial_model_instance
+                        self._data = self._initial_data_instance.get_data()
+                        self._data_labels = list(
+                        self._initial_data_instance.read_labels().keys()
+                        )
+                else:
+                    self._model = self._initial_model_instance
+                    self._data = self._initial_data_instance.get_data()
+                    self._data_labels = list(
                     self._initial_data_instance.read_labels().keys()
-                )
+                    )
+                    
                 annotated_labels_path = self._input_arguments.get(
                     "annotated_labels_path", ""
                 )
