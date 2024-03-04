@@ -8,8 +8,11 @@ ENV TZ=Asia/Singapore
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Install node v18.x
-RUN apt-get update && apt-get install -y curl
-RUN curl -sL https://deb.nodesource.com/setup_18.x | bash -
+RUN apt-get update && apt-get install -y curl ca-certificates gnupg
+RUN mkdir -p /etc/apt/keyrings
+RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+ENV NODE_MAJOR=18
+RUN "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
 RUN apt-get update && apt-get install -y nodejs
 
 # Install python 3.11, virtualenv
@@ -49,12 +52,19 @@ RUN apt-get install chromium -y
 
 RUN ln -s /usr/bin/chromium /usr/bin/chromium-browser
 
+# Install NPM
+RUN apt-get install npm -y
+
 # For shap-toolbox stock plugin
 RUN apt-get install -y gcc g++ python3.11-dev
+
+# Install libmagicwand for Environment Corruption
+RUN apt-get install libmagickwand-dev -y
 
 # Install Git
 RUN apt-get install -y git
 
+# Install Unzip
 RUN apt-get install unzip
 
 ################### Create aiverify user ######################
@@ -104,7 +114,6 @@ ARG PORTAL_URL=http://localhost
 ARG WS_URL=ws://localhost
 RUN echo "PORTAL_URL=$PORTAL_URL WS_URL=$WS_URL"
 RUN echo "APIGW_URL=http://localhost:4000\n\
-MONGODB_URI=mongodb://aiverify:aiverify@db:27017/aiverify\n\
 REDIS_URI=redis://redis:6379\n\
 TEST_ENGINE_URL=http://test-engine:8080" | tee .env.local
 RUN rm .env.development
@@ -116,16 +125,24 @@ RUN npm run build
 
 # Create env file for apigw
 WORKDIR /app/aiverify/ai-verify-apigw
-RUN echo 'MONGODB_URI=mongodb://aiverify:aiverify@db:27017/aiverify\n\
-DB_URI=mongodb://aiverify:aiverify@db:27017/aiverify\n\
-REDIS_HOST=redis\n\
+
+# User entered username and password (in docker-start.sh) override these env values.
+ENV DB_USERNAME="aiverify"
+ENV DB_PASSWORD="aiverify"
+
+ARG ALLOWED_ORIGINS=http://localhost:3000,http://localhost:4000
+RUN echo "ALLOWED_ORIGINS=${ALLOWED_ORIGINS}"
+RUN echo "REDIS_HOST=redis\n\
 REDIS_PORT=6379\n\
-WEB_REPORT_URL=http://localhost:3000/reportStatus/printview' | tee .env
+DB_HOST=db\n\
+DB_PORT=27017\n\
+ALLOWED_ORIGINS=${ALLOWED_ORIGINS}\n\
+WEB_REPORT_URL=http://localhost:3000/reportStatus/printview" | tee .env
 
 # Install dependencies for apigw
 # Skip Chrome/chromium install during puppeteer install, since chromium
 # already installed above
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD 1
+ENV PUPPETEER_SKIP_DOWNLOAD 1
 RUN npm install
 ENV PUPPETEER_EXECUTABLE_PATH /usr/bin/chromium
 
@@ -165,6 +182,8 @@ RUN pip install deepchecks[nlp]==0.17.5
 RUN pip install deepchecks[vision]==0.17.5
 RUN pip install torch==2.1.0
 RUN pip install sentence_transformers==2.2.2
+RUN pip install Wand
+RUN apt-get -y install libmagickwand-dev
 
 # RUN pip install --no-cache-dir fasttext-wheel
 # RUN pip uninstall pybind11
