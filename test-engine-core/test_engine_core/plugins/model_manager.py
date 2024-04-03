@@ -249,6 +249,8 @@ class ModelManager:
         ) in serializer_plugins.items():
             try:
                 temp_serializer = serializer_plugin.Plugin
+                print("TRYING DESERIALIZERS")
+                print(temp_serializer.get_serializer_plugin_type())
                 model = temp_serializer.deserialize_data(model_file)
                 if model is not None:
                     is_success = True

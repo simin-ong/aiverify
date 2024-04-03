@@ -6,7 +6,7 @@ services:
     restart: always
     command: redis-server --save 20 1 --loglevel warning --include /etc/redis/redis.conf
     volumes:
-       - ./redis-init/redis.conf:/etc/redis/redis.conf
+       - ./setup-aiverify/aiverify-user/redis-init/redis.conf:/etc/redis/redis.conf
 #      - ./data/redis:/data
 #      - ./logs/redis:/var/log/redis
     networks:
@@ -19,12 +19,13 @@ services:
       MONGO_INITDB_ROOT_USERNAME: '${MONGO_ROOT_USER:-mongodb}'
       MONGO_INITDB_ROOT_PASSWORD: '${MONGO_ROOT_PASSWORD:-mongodb}'
       MONGO_INITDB_DATABASE: admin
+      MONGO_AIVERIFY_USER: '${DB_AIVERIFY_USER:-aiverify}'
       MONGO_AIVERIFY_PASSWORD: '${DB_AIVERIFY_PASSWORD:-aiverify}'
     user: '${CUR_UID}:${CUR_GID}'
     volumes:
       - ~/data/db:/data/db
       - ~/logs/db:/var/log/mongodb
-      - ./mongo-init:/docker-entrypoint-initdb.d
+      - ./setup-aiverify/aiverify-user/mongo-init:/docker-entrypoint-initdb.d
     networks:
       - app-network
 
@@ -47,6 +48,13 @@ services:
       - logs-volume:/app/aiverify/test-engine-app/logs
       - uploads-data-volume:/app/aiverify/uploads/data
       - uploads-model-volume:/app/aiverify/uploads/model
+    deploy: 
+      resources: 
+        reservations: 
+          devices: 
+            - driver: nvidia 
+              count: 1 
+              capabilities: [gpu]
     networks:
       - app-network
 
@@ -58,6 +66,9 @@ services:
       # no_cache: true 
     # image: aiverify:simin
     image: aiverify:simin
+    environment:
+      DB_USERNAME: '${DB_AIVERIFY_USER:-aiverify}'
+      DB_PASSWORD: '${DB_AIVERIFY_PASSWORD:-aiverify}'
     ports:
       - "3000:3000"
       - "4000:4000"

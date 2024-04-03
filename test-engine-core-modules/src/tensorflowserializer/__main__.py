@@ -4,7 +4,7 @@ from module_tests.plugin_test import PluginTest
 
 if __name__ == "__main__":
     discover_path = Path.cwd().parent
-    file_path = ""
+    file_path = "module_tests/Xception-10-0.74.hdf5"
 
     # =================================================================================
     # NOTE: Do not modify the code below

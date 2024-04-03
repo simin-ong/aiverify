@@ -1,6 +1,6 @@
 # Build the aiverify docker image
 
-FROM ubuntu:22.04
+FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
 
 ###################  Install libraries ######################
 
@@ -166,6 +166,7 @@ ENV PATH="/app/aiverify/venv/bin:$PATH"
 
 # Install dependencies
 WORKDIR /app/aiverify/test-engine-app
+RUN 
 RUN pip install -r requirements.txt
 WORKDIR /app/aiverify/test-engine-core
 RUN pip install -r requirements.txt
@@ -184,6 +185,14 @@ RUN pip install torch==2.1.0
 RUN pip install sentence_transformers==2.2.2
 RUN pip install Wand
 RUN apt-get -y install libmagickwand-dev
+RUN pip install opencv-python==4.7.0.72
+RUN pip install lazy_loader==0.3
+RUN pip install adversarial-robustness-toolbox==1.17.1
+RUN pip install tensorflow_addons==0.23.0
+RUN pip install minio==7.2.5
+RUN pip install tensorflow[and-cuda]
+RUN pip install librosa==0.10.1
+RUN pip install faster-whisper==0.10.1
 
 # RUN pip install --no-cache-dir fasttext-wheel
 # RUN pip uninstall pybind11
