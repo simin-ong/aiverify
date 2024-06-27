@@ -18,6 +18,7 @@ from test_engine_app.network.redis_constants import (
     REDIS_STREAM_SERVICE_NAME,
     REDIS_STREAM_TASK_NAME,
 )
+
 from test_engine_app.processing.plugin_controller import PluginController
 from test_engine_app.processing.service import Service
 from test_engine_app.processing.task import Task
