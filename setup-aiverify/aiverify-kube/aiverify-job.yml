@@ -1,0 +1,31 @@
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: aiverify-job-config
+#   namespace: aiverify
+# data:
+#    var: "var"
+# ---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: test-job
+  namespace: aiverify
+spec:
+  template:
+    spec:
+      containers:
+        - name: test-job
+          image: aiverify-job:new
+          env:
+            - name: var_one
+              value: "blueberry"
+            - name: var_two
+              value: "strawberry"
+        # envFrom:
+        # - configMapRef:
+        #     name: aiverify-job-config
+          # command: ["python", "test.py"]
+      restartPolicy: Never
+  backoffLimit: 5
+---

@@ -1,13 +1,31 @@
 # Build the aiverify-test-engine docker image
 
-FROM ubuntu:22.04
+FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
 
 ###################  Install libraries ######################
 
 ENV TZ=Asia/Singapore
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
+RUN apt-get update 
+
+## Install kubectl
+RUN apt-get install -y apt-transport-https ca-certificates curl gnupg
+
+RUN curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+RUN chmod 644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+RUN echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
+RUN chmod 644 /etc/apt/sources.list.d/kubernetes.list
 RUN apt-get update
+RUN apt-get install -y kubectl
+
+
+##Install helm
+RUN curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | tee /usr/share/keyrings/helm.gpg > /dev/null
+RUN apt-get install apt-transport-https --yes
+RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | tee /etc/apt/sources.list.d/helm-stable-debian.list
+RUN apt-get update
+RUN apt-get install helm
 
 # Install git
 RUN apt-get install -y git
@@ -108,7 +126,25 @@ RUN apt-get remove git unzip -y
 RUN mkdir -p ./ai-verify-portal/plugins
 RUN chown -R 1000:1000 ./ai-verify-portal
 
+# RUN ls
+
+WORKDIR /app/aiverify/test-engine-app/test_engine_app
+# change number of cpu workers so that it doesnt hang
+COPY ./test_engine_app.py ./ 
+
+# WORKDIR /app/aiverify/ai-verify-portal/
+# COPY ./aiverify-job.yml ./
+# feed in task specific inputs here (translate from front end to job parameters)
+WORKDIR /app/aiverify/test-engine-app/test_engine_app/processing
+COPY ./task_processing.py ./
+
+# for kubectl or helm install
+WORKDIR /app/aiverify/test-engine-app
+COPY ./aiverify-job.yml ./
+COPY mychart/ ./mychart/
+
 # Run containers with non-root user
 USER $USER
 
 WORKDIR /app
+

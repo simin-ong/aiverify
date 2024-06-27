@@ -6,7 +6,8 @@
 # values for your environment.
 
 # Namespace to deploy and run aiverify, default to aiverify
-NAMESPACE=""
+# NAMESPACE=""
+NAMESPACE="aiverify"
 
 # StorageClass names for the EBS CSI add-on. This is used to create the
 # PersistentVolumeClaims for persistent storage used by the aiverify-db component.
@@ -22,25 +23,29 @@ EFS_STGCLASS_NAME=""
 # Image URL for the aiverify-portal component
 # e.g. 111122223333.dkr.ecr.ap-southeast-1.amazonaws.com/aiverify-portal:0.10
 # No default value is provided for this variable.
-PORTAL_IMG_URL=""
+# PORTAL_IMG_URL=""
+PORTAL_IMG_URL="aiverify-portal:0.10-amd64"
 
 # Image URL for the aiverify-test-engine component
 # e.g. 111122223333.dkr.ecr.ap-southeast-1.amazonaws.com/aiverify-test-engine:0.10
 # No default value is provided for this variable.
-TESTENGINE_IMG_URL=""
+# TESTENGINE_IMG_URL=""
+TESTENGINE_IMG_URL="aiverify-test-engine:0.10-amd64"
 
 # Image URL for the aiverify-redis component
 # Default to public.ecr.aws/docker/library/redis:6.2-alpine
 REDIS_IMG_URL=""
+# REDIS_IMG_URL="redis:6.2-alpine"
 
 # Image URL for the aiverify-db component
 # Default to public.ecr.aws/docker/library/mongo:6.0.4
 MONGODB_IMG_URL=""
+# MONGODB_IMG_URL="mongo:6.0.4"
 
 # The URL to access the aiverify portal, e.g. aiverify.eks.acme.com
 # This value is also used to set ALLOWED_ORIGINS in the aiverify-portal deployment.
 # No default value is provided for this variable.
-INGRESS_HOST=""
+INGRESS_HOST="aiverify.testing"
 
 # Specific to AWS Load Balancer Controller add-on:
 # Name of the IngressGroup resource to associate with the aiverify ingress.

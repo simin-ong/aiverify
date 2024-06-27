@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aiverify-portal-ingress
+  namespace: aiverify
+  # annotations:
+  #   alb.ingress.kubernetes.io/scheme: internal
+  #   alb.ingress.kubernetes.io/target-type: ip
+  #   alb.ingress.kubernetes.io/group.name: na
+  #   alb.ingress.kubernetes.io/load-balancer-name: na
+  #   external-dns.alpha.kubernetes.io/target: na
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: aiverify.testing
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: aiverify-portal-service 
+                port:
+                  name: http
+---

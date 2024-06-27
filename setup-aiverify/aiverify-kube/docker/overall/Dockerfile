@@ -1,4 +1,4 @@
-# Build the aiverify-portal docker image
+# Build the aiverify docker image
 
 FROM ubuntu:22.04
 
@@ -8,13 +8,18 @@ ENV TZ=Asia/Singapore
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Install node v18.x
-RUN apt-get update
-RUN apt-get install -y curl ca-certificates gnupg
+RUN apt-get update && apt-get install -y curl ca-certificates gnupg
 RUN mkdir -p /etc/apt/keyrings
 RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
 ENV NODE_MAJOR=18
 RUN "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
 RUN apt-get update && apt-get install -y nodejs
+
+# Install python 3.11, virtualenv
+RUN apt-get update
+RUN apt install software-properties-common -y
+RUN add-apt-repository ppa:deadsnakes/ppa
+RUN apt-get install -y python3.11 python3.11-venv
 
 ###################  Install chromium ######################
 
@@ -47,17 +52,26 @@ RUN apt-get install chromium -y
 
 RUN ln -s /usr/bin/chromium /usr/bin/chromium-browser
 
-# Install npm
+# Install NPM
 RUN apt-get install npm -y
 
-# Install git
+# For shap-toolbox stock plugin
+RUN apt-get install -y gcc g++ python3.11-dev
+
+# Install libmagicwand for Environment Corruption
+RUN apt-get install libmagickwand-dev -y
+
+# Install Git
 RUN apt-get install -y git
+
+# Install Unzip
+RUN apt-get install unzip
 
 ################### Create aiverify user ######################
 
 ARG USER=aiverify
-RUN groupadd -g 1000 $USER
-RUN useradd -u 1000 -g 1000 -ms /bin/bash $USER
+RUN groupadd -g 10000 $USER
+RUN useradd -u 10000 -g 10000 -ms /bin/bash $USER
 
 ###################  Clone aiverify repo ######################
 
@@ -67,13 +81,15 @@ RUN echo "BRANCH_TAG=$BRANCH_TAG"
 WORKDIR /app
 RUN git clone https://github.com/$REPO --branch=$BRANCH_TAG aiverify
 
-# Create plugins, file upload and logs folders
 WORKDIR /app/aiverify
+
+# Create plugins, file upload and logs folders
 RUN mkdir -p ./ai-verify-portal/plugins
 RUN mkdir -p ./uploads/data
 RUN mkdir -p ./uploads/model
+RUN mkdir -p ./test-engine-app/logs
 
-RUN chown -R 1000:1000 /app/aiverify
+RUN chown -R 10000:10000 /app/aiverify
 
 ###################  Node ######################
 
@@ -84,13 +100,18 @@ RUN npm install && npm run build
 WORKDIR /app/aiverify/ai-verify-portal
 
 # Create env file for portal
+# Change localhost of the following urls (via --build-arg) to hostname of
+# the machine running aiverify if you want to access from a remote browser
+ARG PORTAL_URL=http://localhost
+ARG WS_URL=ws://localhost
+RUN echo "PORTAL_URL=$PORTAL_URL WS_URL=$WS_URL"
 RUN echo "APIGW_URL=http://localhost:4000\n\
 REDIS_URI=redis://redis:6379\n\
 TEST_ENGINE_URL=http://test-engine:8080" | tee .env.local
 RUN rm .env.development
 
 # Install dependencies for portal, and build portal (nextjs build)
-RUN npm install --omit=dev
+RUN npm install
 RUN npm link ../ai-verify-shared-library
 RUN npm run build
 
@@ -101,8 +122,7 @@ WORKDIR /app/aiverify/ai-verify-apigw
 ENV DB_USERNAME="aiverify"
 ENV DB_PASSWORD="t1oj5L_xQI8dTrVuZ"
 
-ENV ALLOWED_ORIGINS=*
-# ENV ALLOWED_ORIGINS=http://localhost:3000,http://localhost:4000
+ENV ALLOWED_ORIGINS=http://localhost:3000,http://localhost:4000
 RUN echo "ALLOWED_ORIGINS=${ALLOWED_ORIGINS}"
 RUN echo "REDIS_HOST=redis\n\
 REDIS_PORT=6379\n\
@@ -115,29 +135,47 @@ WEB_REPORT_URL=http://localhost:3000/reportStatus/printview" | tee .env
 # Skip Chrome/chromium install during puppeteer install, since chromium
 # already installed above
 ENV PUPPETEER_SKIP_DOWNLOAD 1
-RUN npm install --omit=dev
+RUN npm install
 ENV PUPPETEER_EXECUTABLE_PATH /usr/bin/chromium
 
+############## Stock plugins #################
+
+# Unzip stock plugin bundles into the plugins folder
+WORKDIR /app/aiverify/stock-plugins
+RUN for plugin_dir in *; do \
+      echo "Unzipping plugin $plugin_dir"; \
+      unzip $plugin_dir/dist/*.zip -d ../ai-verify-portal/plugins/$plugin_dir; \
+    done
+
+RUN chown -R 10000:10000 /app/aiverify/ai-verify-portal/plugins
+
+############### Python #################
+
+# Install dependencies into virtualenv
 WORKDIR /app/aiverify
-RUN rm -rf test-engine-app && rm -rf test-engine-core && rm -rf test-engine-core-modules
-RUN rm -rf stock-plugins && rm -rf third-party && rm -rf setup-aiverify && rm -rf examples && rm -rf scripts && rm -rf deploy-scripts
-RUN apt-get remove git -y
+RUN python3 -m venv venv
+ENV PATH="/app/aiverify/venv/bin:$PATH"
 
-# Create test-engine log folder
-RUN mkdir -p ./test-engine-app/logs
-RUN chown -R 1000:1000 ./test-engine-app
+# Install dependencies
+WORKDIR /app/aiverify/test-engine-app
+RUN pip install -r requirements.txt
+WORKDIR /app/aiverify/test-engine-core
+RUN pip install -r requirements.txt
+WORKDIR /app/aiverify/test-engine-core-modules
+RUN pip install -r requirements.txt
+WORKDIR /app/aiverify/stock-plugins
+RUN find ./ -type f -name 'requirements.txt' -exec pip install -r "{}" \;
+WORKDIR /app/aiverify
+RUN pip install ./test-engine-core/dist/test_engine_core-*.tar.gz
 
-# Nextjs cache.
-RUN chown 1000:1000 ./ai-verify-portal/.next/cache
-
-# WORKDIR /app/aiverify/ai-verify-apigw
-# # COPY ../../../../ai-verify-apigw/app.mjs .
-# COPY ./upload.mjs ./routes
-# COPY ./testEngineWorker.mjs ./lib
-
-# WORKDIR /app/aiverify/ai-verify-portal
-# COPY ../../../../ai-verify-portal/next.config.js .
-
+# Create env file for test-engine-app
+WORKDIR /app/aiverify/test-engine-app
+RUN echo 'CORE_MODULES_FOLDER="../test-engine-core-modules"\n\
+VALIDATION_SCHEMAS_FOLDER="./test_engine_app/validation_schemas/"\n\
+REDIS_CONSUMER_GROUP="MyGroup"\n\
+REDIS_SERVER_HOSTNAME="redis"\n\
+REDIS_SERVER_PORT=6379\n\
+API_SERVER_PORT=8080' | tee .env
 
 # Run containers with non-root user
 USER $USER
